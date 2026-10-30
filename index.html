@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Student Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+    --bg: #0b1220;
+    --card: #111827;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --accent: #6366f1;
+    --border: #1f2937;
+}
+
+.light-mode {
+    --bg: #f9fafb;
+    --card: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --accent: #4f46e5;
+    --border: #e5e7eb;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    transition: 0.3s;
+}
+
+/* HEADER */
+.header {
+    text-align: center;
+    padding: 20px;
+    font-size: 26px;
+    font-weight: 600;
+}
+
+/* BUTTON */
+#themeBtn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+}
+
+/* LAYOUT */
+.container { padding: 20px; }
+
+/* CARDS */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.card {
+    padding: 16px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-size: 14px;
+}
+
+/* MAIN */
+.main {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* FORM */
+.form {
+    padding: 20px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+}
+
+/* INPUT */
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* BUTTON */
+button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-weight: 500;
+}
+
+/* RESULT */
+.result {
+    margin-top: 15px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.high { color: #22c55e; }
+.medium { color: #f59e0b; }
+.low { color: #ef4444; }
+
+.insight { color: var(--muted); }
+.top { color: var(--accent); }
+
+/* CHARTS */
+.charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.chart {
+    padding: 15px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+}
+
+/* AI BOX */
+.ai-box {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+}
+
+/* RECOMMEND */
+.recommend {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(99,102,241,0.08);
+    border-left: 3px solid var(--accent);
+}
+</style>
+</head>
+
+<body>
+
+<button onclick="toggleTheme()" id="themeBtn">🌙</button>
+
+<div class="header">🚀 AI Performance Dashboard</div>
+
+<div class="container">
+
+<div class="cards">
+<div class="card">📚 Study</div>
+<div class="card">📊 Attendance</div>
+<div class="card">🔥 Motivation</div>
+<div class="card">🎯 Result</div>
+</div>
+
+<div class="main">
+
+<!-- FORM -->
+<div class="form">
+<form action="/predict" method="post">
+
+<input type="number" name="hours" placeholder="Study Hours" required>
+<input type="number" name="attendance" placeholder="Attendance %" required>
+<input type="number" name="sleep" placeholder="Sleep Hours" required>
+<input type="number" name="previous" placeholder="Previous Score" required>
+
+<select name="motivation">
+<option>Low</option>
+<option>Medium</option>
+<option>High</option>
+</select>
+
+<select name="internet">
+<option>Yes</option>
+<option>No</option>
+</select>
+
+<button>✨ Analyze</button>
+</form>
+
+{% if prediction %}
+
+<div class="result 
+{% if 'High' in prediction %}high
+{% elif 'Medium' in prediction %}medium
+{% else %}low{% endif %}">
+{{ prediction }}
+</div>
+
+<div class="insight">💡 {{ insight }}</div>
+<div class="top">🔥 {{ top_feature }}</div>
+
+<div>📊 Accuracy: {{ accuracy }}%</div>
+<div>⚙ Params: {{ best_params }}</div>
+
+<!-- AI INSIGHTS -->
+<div class="ai-box">
+<h3>🧠 AI Insights</h3>
+{% for i in insights %}
+<p>{{ i }}</p>
+{% endfor %}
+</div>
+
+<!-- RECOMMENDATION -->
+<div class="recommend">
+💡 <b>Recommendation:</b><br>
+{{ recommendation }}
+</div>
+
+{% endif %}
+</div>
+
+<!-- CHARTS -->
+{% if importance %}
+<div class="charts">
+<div class="chart"><canvas id="bar"></canvas></div>
+<div class="chart"><canvas id="pie"></canvas></div>
+<div class="chart"><canvas id="line"></canvas></div>
+<div class="chart"><canvas id="hbar"></canvas></div>
+</div>
+{% endif %}
+
+</div>
+
+</div>
+
+{% if importance %}
+<script>
+const labels = {{ features | safe }};
+const data = {{ importance | safe }};
+
+new Chart(bar,{type:'bar',data:{labels,datasets:[{data}]}});
+
+new Chart(pie,{type:'pie',data:{labels,datasets:[{data}]}});
+
+new Chart(line,{type:'line',data:{labels,datasets:[{data,fill:false}]}});
+
+new Chart(hbar,{
+type:'bar',
+data:{labels,datasets:[{data}]},
+options:{indexAxis:'y'}
+});
+</script>
+{% endif %}
+
+<script>
+function toggleTheme() {
+    document.body.classList.toggle("light-mode");
+
+    let theme = document.body.classList.contains("light-mode") ? "light" : "dark";
+    localStorage.setItem("theme", theme);
+
+    document.getElementById("themeBtn").innerText =
+        theme === "light" ? "☀️" : "🌙";
+}
+
+window.onload = function () {
+    let savedTheme = localStorage.getItem("theme");
+
+    if (savedTheme === "light") {
+        document.body.classList.add("light-mode");
+        document.getElementById("themeBtn").innerText = "☀️";
+    }
+};
+</script>
+
+</body>
+</html>
